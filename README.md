@@ -10,7 +10,7 @@ Simple lightweight dependency manager.
 First, add dependency in your project.
 
 ### Maven
-```dtd
+```xml
 <repositories>
     <repository>
         <id>icewynd-repository-releases</id>
