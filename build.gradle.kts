@@ -8,7 +8,7 @@ allprojects {
     apply(plugin = "maven-publish")
 
     group = "pw.iwmc.libman"
-    version = "1.0.0-SNAPSHOT"
+    version = "1.0.0"
     description = "Simple lightweight dependency manager."
 
     java {
@@ -20,5 +20,25 @@ allprojects {
 
     repositories {
         mavenCentral()
+    }
+
+    publishing {
+        repositories {
+            maven {
+                name = "icewynd-repository"
+
+                val releases = "https://maven.iwmc.pw/releases/"
+                val snapshots = "https://maven.iwmc.pw/snapshots/"
+
+                val finalUrl = if (rootProject.version.toString().endsWith("SNAPSHOT")) snapshots else releases
+
+                url = uri(finalUrl)
+
+                credentials {
+                    username = System.getenv("REPO_USERNAME")
+                    password = System.getenv("REPO_TOKEN")
+                }
+            }
+        }
     }
 }
