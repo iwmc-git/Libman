@@ -6,6 +6,9 @@ Simple lightweight dependency manager.
 [![GitHub stars](https://img.shields.io/github/stars/iwmc-git/Libman?style=for-the-badge)](https://github.com/iwmc-git/Libman/stargazers)
 [![GitHub license](https://img.shields.io/github/license/iwmc-git/Libman?style=for-the-badge)](https://github.com/iwmc-git/Libman/blob/master/LICENSE) 
 
+## Warning
+Libman will only work on 17 Java.
+
 ## Usage
 First, add dependency in your project.
 
