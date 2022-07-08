@@ -40,10 +40,12 @@ public class LibraryDownloader implements Downloader {
 
     @Override
     public void downloadDependency(@NotNull Dependency dependency) {
+        var libraryPath = LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder());
         var found = false;
 
-        if (Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()))) {
+        if (Files.exists(libraryPath)) {
             libman.log(String.format("Dependency `%s` exists! Skipping...", dependency.artifactName()));
+            libman.addDependencyToDownloaded(dependency, libraryPath);
             return;
         }
 
@@ -99,32 +101,32 @@ public class LibraryDownloader implements Downloader {
                     var urlConnection = openConnection(artifactUrl);
                     var status = urlConnection.getResponseCode();
 
-                    assert (status >= 200 && status < 300) || status == 304;
+                    if ((status >= 200 && status < 300) || status == 304) {
+                        if (!LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).exists()) {
+                            libman.log(String.format("Trying download %s from %s", dependency.artifactName(), repository.name()));
+                            downloadFile(artifactUrl, LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
+                        }
 
-                    if (!LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).exists()) {
-                        libman.log(String.format("Trying download %s from %s", dependency.artifactName(), repository.name()));
-                        downloadFile(artifactUrl, LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
-                    }
+                        found = Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
 
-                    found = Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
+                        if (checkFileHashes) {
+                            libman.log("Checking file hash from repository...");
 
-                    if (checkFileHashes) {
-                        libman.log("Checking file hash from repository...");
+                            var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
+                            var hashStream = openStream(hashUrl);
+                            var remoteFileHash = IOUtil.toString(hashStream);
+                            var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
 
-                        var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
-                        var hashStream = openStream(hashUrl);
-                        var remoteFileHash = IOUtil.toString(hashStream);
-                        var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
+                            libman.log(String.format("Remote hash for %s from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));
+                            libman.log(String.format("Local hash for %s from %s - %s", dependency.artifactName(), repository.name(), localFileHash));
 
-                        libman.log(String.format("Remote hash for %s from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));
-                        libman.log(String.format("Local hash for %s from %s - %s", dependency.artifactName(), repository.name(), localFileHash));
+                            var validHash = localFileHash.equalsIgnoreCase(remoteFileHash);
 
-                        var validHash = localFileHash.equalsIgnoreCase(remoteFileHash);
-
-                        if (validHash) {
-                            libman.log(String.format("Dependency file %s hashes matches with each other!", dependency.artifactName()));
-                        } else {
-                            throw new RuntimeException("Artifact hash mismatch for file: " + LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).getName());
+                            if (validHash) {
+                                libman.log(String.format("Dependency file %s hashes matches with each other!", dependency.artifactName()));
+                            } else {
+                                throw new RuntimeException("Artifact hash mismatch for file: " + LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).getName());
+                            }
                         }
                     }
                 }

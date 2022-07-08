@@ -114,12 +114,24 @@ public class Libman implements LibmanAPI {
         return remapper;
     }
 
+    public static Libman libman() {
+        return libman;
+    }
+
     public List<Repository> repositories() {
         return repositories;
     }
 
-    public static Libman libman() {
-        return libman;
+    public void addDependencyToDownloaded(Dependency dependency, Path path) {
+        if (!downloaded.containsKey(dependency) && !downloaded.containsValue(path)) {
+            downloaded.put(dependency, path);
+        }
+    }
+
+    public void addDependencyToRemapped(Dependency dependency, Path path) {
+        if (!remapped.containsKey(dependency) && !remapped.containsValue(path)) {
+            remapped.put(dependency, path);
+        }
     }
 
     public void log(String message) {
