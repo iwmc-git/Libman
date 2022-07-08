@@ -25,14 +25,21 @@ public class LibraryDownloader implements Downloader {
     public LibraryDownloader() {
         libman.log("Initializing downloader...");
 
-        this.downloadDependency(LibmanConstants.ASM);
-        this.downloadDependency(LibmanConstants.ASM_COMMONS);
-        this.downloadDependency(LibmanConstants.RELOCATOR);
+        if (Files.notExists(LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()))) {
+            this.downloadDependency(LibmanConstants.ASM);
+            this.downloadDependency(LibmanConstants.ASM_COMMONS);
+            this.downloadDependency(LibmanConstants.RELOCATOR);
+        }
     }
 
     @Override
     public void downloadDependency(@NotNull Dependency dependency) {
         var found = false;
+
+        if (Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()))) {
+            libman.log(String.format("Dependency `%s` exists! Skipping...", dependency.artifactName()));
+            return;
+        }
 
         for (var repository : libman.repositories()) {
             try {
