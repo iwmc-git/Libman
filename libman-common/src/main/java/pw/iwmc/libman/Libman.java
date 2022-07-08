@@ -116,10 +116,6 @@ public class Libman implements LibmanAPI {
         if (enableLogger) logger.info(message);
     }
 
-    public void log(String message, Throwable throwable) {
-        if (enableLogger) logger.info(message, throwable);
-    }
-
     public boolean checkFileHashes() {
         return checkFileHashes;
     }
