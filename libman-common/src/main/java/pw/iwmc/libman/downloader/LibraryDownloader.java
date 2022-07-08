@@ -25,10 +25,16 @@ public class LibraryDownloader implements Downloader {
     public LibraryDownloader() {
         libman.log("Initializing downloader...");
 
-        if (Files.notExists(LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()))) {
-            this.downloadDependency(LibmanConstants.ASM);
-            this.downloadDependency(LibmanConstants.ASM_COMMONS);
-            this.downloadDependency(LibmanConstants.RELOCATOR);
+        if (libman.useRemapper()) {
+            if (Files.notExists(LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()))) {
+                this.downloadDependency(LibmanConstants.ASM);
+                this.downloadDependency(LibmanConstants.ASM_COMMONS);
+                this.downloadDependency(LibmanConstants.RELOCATOR);
+            }
+
+            libman.downloaded().put(LibmanConstants.ASM, LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()));
+            libman.downloaded().put(LibmanConstants.ASM_COMMONS, LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()));
+            libman.downloaded().put(LibmanConstants.RELOCATOR, LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()));
         }
     }
 

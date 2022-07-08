@@ -23,36 +23,43 @@ public class Libman implements LibmanAPI {
     private static Libman libman;
 
     private final Map<Dependency, Path> downloaded;
-    private final Map<Dependency, Path> remapped;
+    private final boolean useRemapper;
+    private Map<Dependency, Path> remapped;
 
     private final Downloader downloader;
-    private final Remapper remapper;
+    private Remapper remapper;
 
     private final Logger logger;
 
     private final boolean enableLogger;
     private final boolean checkFileHashes;
 
-    private final Path remappedDependsFolder;
+    private Path remappedDependsFolder;
     private final Path downloadedDependsFolder;
 
     private final List<Repository> repositories;
 
-    public Libman(@NotNull Path rootPath, List<Repository> repositories, boolean enableLogger, boolean checkFileHashes) {
+    public Libman(@NotNull Path rootPath, List<Repository> repositories, boolean enableLogger, boolean checkFileHashes, boolean useRemapper) {
         libman = this;
 
         this.enableLogger = enableLogger;
+        this.useRemapper = useRemapper;
+
         this.logger = enableLogger ? LoggerFactory.getLogger("libman::main") : null;
 
         this.log("Loading Libman...");
+        this.log("Remapping function is " + (useRemapper ? "activated!" : "disabled!"));
 
         try {
-            this.remappedDependsFolder = Paths.get(rootPath.toString(), "remapped-libs").toAbsolutePath();
             this.downloadedDependsFolder = Paths.get(rootPath.toString(), "downloaded-libs").toAbsolutePath();
 
-            if (Files.notExists(remappedDependsFolder)) {
-                log("Creating the directory for downloads...");
-                Files.createDirectory(remappedDependsFolder);
+            if (useRemapper) {
+                this.remappedDependsFolder = Paths.get(rootPath.toString(), "remapped-libs").toAbsolutePath();
+
+                if (Files.notExists(remappedDependsFolder)) {
+                    log("Creating the directory for downloads...");
+                    Files.createDirectory(remappedDependsFolder);
+                }
             }
 
             if (Files.notExists(downloadedDependsFolder)) {
@@ -65,13 +72,16 @@ public class Libman implements LibmanAPI {
 
         log("Initializing maps...");
         this.downloaded = new HashMap<>();
-        this.remapped = new HashMap<>();
 
         this.checkFileHashes = checkFileHashes;
         this.repositories = repositories;
 
         this.downloader = new LibraryDownloader();
-        this.remapper = new LibraryRemapper();
+
+        if (useRemapper) {
+            this.remapped = new HashMap<>();
+            this.remapper = new LibraryRemapper();
+        }
     }
 
     @Override
@@ -118,5 +128,9 @@ public class Libman implements LibmanAPI {
 
     public boolean checkFileHashes() {
         return checkFileHashes;
+    }
+
+    public boolean useRemapper() {
+        return useRemapper;
     }
 }
