@@ -8,7 +8,7 @@ allprojects {
     apply(plugin = "maven-publish")
 
     group = "pw.iwmc.libman"
-    version = "1.0.0"
+    version = "1.0.1"
     description = "Simple lightweight dependency manager."
 
     java {
