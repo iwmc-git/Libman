@@ -26,12 +26,12 @@ First, add dependency in your project.
     <dependency>
         <groupId>pw.iwmc.libman</groupId>
         <artifactId>libman-api</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.4</version>
     </dependency>
     <dependency>
         <groupId>pw.iwmc.libman</groupId>
         <artifactId>libman-comon</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.4</version>
     </dependency>
 </dependencies>
 ```
@@ -46,8 +46,8 @@ repositories {
 }
 
 dependencies {
-    implementation("pw.iwmc.libman:libman-api:1.0.0")
-    implementation("pw.iwmc.libman:libman-common:1.0.0")
+    implementation("pw.iwmc.libman:libman-api:1.0.4")
+    implementation("pw.iwmc.libman:libman-common:1.0.4")
 }
 ```
 
