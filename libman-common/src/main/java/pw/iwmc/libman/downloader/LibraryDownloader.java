@@ -1,7 +1,5 @@
 package pw.iwmc.libman.downloader;
 
-import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
-import org.codehaus.plexus.util.IOUtil;
 import org.jetbrains.annotations.NotNull;
 
 import pw.iwmc.libman.Libman;
@@ -9,6 +7,7 @@ import pw.iwmc.libman.LibmanConstants;
 import pw.iwmc.libman.LibmanUtils;
 import pw.iwmc.libman.api.downloader.Downloader;
 import pw.iwmc.libman.api.objects.Dependency;
+import pw.iwmc.libman.metadata.helper.SnapshotHelper;
 
 import java.io.File;
 import java.io.InputStream;
@@ -19,7 +18,6 @@ import java.nio.file.StandardCopyOption;
 
 public class LibraryDownloader implements Downloader {
     private final Libman libman = Libman.libman();
-    private final MetadataXpp3Reader reader = new MetadataXpp3Reader();
     private final boolean checkFileHashes = libman.checkFileHashes();
 
     public LibraryDownloader() {
@@ -60,9 +58,7 @@ public class LibraryDownloader implements Downloader {
 
                     if ((status >= 200 && status < 300) || status == 304) {
                         var stream = openStream(metaDataUrl);
-                        var meta = reader.read(stream);
-
-                        var latest = LibmanUtils.snapshotVersion(meta);
+                        var latest = SnapshotHelper.readLastVersion(stream);
 
                         dependency.newArtifactName(dependency.artifactId() + "-" + latest);
                         libman.log(String.format("Dependency %s is snapshot! Update version to %s", dependency.artifactId(), latest));
@@ -81,7 +77,7 @@ public class LibraryDownloader implements Downloader {
 
                             var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
                             var hashStream = openStream(hashUrl);
-                            var remoteFileHash = IOUtil.toString(hashStream);
+                            var remoteFileHash = LibmanUtils.stringFromStream(hashStream);
                             var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
 
                             libman.log(String.format("Remote hash for %s from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));
@@ -114,7 +110,7 @@ public class LibraryDownloader implements Downloader {
 
                             var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
                             var hashStream = openStream(hashUrl);
-                            var remoteFileHash = IOUtil.toString(hashStream);
+                            var remoteFileHash = LibmanUtils.stringFromStream(hashStream);
                             var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
 
                             libman.log(String.format("Remote hash for %s from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));

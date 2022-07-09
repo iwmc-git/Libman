@@ -1,6 +1,5 @@
 package pw.iwmc.libman;
 
-import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.jetbrains.annotations.NotNull;
 
 import pw.iwmc.libman.api.objects.Dependency;
@@ -8,6 +7,7 @@ import pw.iwmc.libman.api.objects.Dependency;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
@@ -20,11 +20,12 @@ import java.security.MessageDigest;
 
 public class LibmanUtils {
 
-    public static String snapshotVersion(@NotNull Metadata metadata) {
-        var versions = metadata.getVersioning().getSnapshotVersions();
-        var version = versions.stream().filter(s -> s.getClassifier().isEmpty() && s.getExtension().equals("jar")).findFirst();
-
-        return version.isEmpty() ? "" : version.get().getVersion();
+    public static String stringFromStream(@NotNull InputStream stream) {
+        try {
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static @NotNull File libraryFile(@NotNull Dependency dependency) {

@@ -1,6 +1,11 @@
+plugins {
+    id("com.github.johnrengelman.shadow") version("7.1.2")
+}
+
 dependencies {
-    api("org.apache.maven:maven-repository-metadata:3.8.5")
+    api("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
     api("org.jetbrains:annotations:23.0.0")
+
     api("org.slf4j:slf4j-api:1.7.36")
     api("org.slf4j:slf4j-simple:1.7.36")
 
