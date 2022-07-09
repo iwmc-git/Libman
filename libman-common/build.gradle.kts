@@ -1,7 +1,3 @@
-plugins {
-    id("com.github.johnrengelman.shadow") version("7.1.2")
-}
-
 dependencies {
     api("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
     api("org.jetbrains:annotations:23.0.0")
