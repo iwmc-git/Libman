@@ -12,6 +12,7 @@ import pw.iwmc.libman.api.remapper.Remapper;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -91,13 +92,17 @@ public class LibraryRemapper implements Remapper {
                 var instance = constructor.newInstance(input, output, rules);
                 var run = classJarRelocator.getMethod("run");
 
+                if (Files.notExists(to)) {
+                    Files.createDirectories(output.toPath());
+                }
+
                 run.invoke(instance);
 
                 var endTime = System.currentTimeMillis() - currentTime;
 
                 libman.log(String.format("Dependency %s successfully remapped! (%sms took)", dependency.artifactName(), endTime));
                 libman.remapped().put(dependency, output.toPath());
-            } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException exception) {
+            } catch (Exception exception) {
                 throw new IllegalArgumentException("Cannot instantiate JarRelocator class", exception);
             }
         }

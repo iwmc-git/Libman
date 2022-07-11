@@ -7,6 +7,7 @@ import pw.iwmc.libman.LibmanConstants;
 import pw.iwmc.libman.LibmanUtils;
 import pw.iwmc.libman.api.downloader.Downloader;
 import pw.iwmc.libman.api.objects.Dependency;
+import pw.iwmc.libman.api.objects.Repository;
 import pw.iwmc.libman.metadata.helper.SnapshotHelper;
 
 import java.io.File;
@@ -29,10 +30,6 @@ public class LibraryDownloader implements Downloader {
                 this.downloadDependency(LibmanConstants.ASM_COMMONS);
                 this.downloadDependency(LibmanConstants.RELOCATOR);
             }
-
-            libman.downloaded().put(LibmanConstants.ASM, LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()));
-            libman.downloaded().put(LibmanConstants.ASM_COMMONS, LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()));
-            libman.downloaded().put(LibmanConstants.RELOCATOR, LibmanUtils.libraryPath(LibmanConstants.ASM, libman.downloadedDependsFolder()));
         }
     }
 
@@ -42,7 +39,7 @@ public class LibraryDownloader implements Downloader {
         var found = false;
 
         if (Files.exists(libraryPath)) {
-            libman.log(String.format("Dependency `%s` exists! Skipping...", dependency.artifactName()));
+            libman.log(String.format("Dependency `%s.jar` exists! Skipping...", dependency.artifactName()));
             libman.addDependencyToDownloaded(dependency, libraryPath);
             return;
         }
@@ -51,81 +48,11 @@ public class LibraryDownloader implements Downloader {
             try {
                 if (found) continue;
 
-                if (dependency.snapshot()) {
-                    var metaDataUrl = LibmanUtils.metadataUrl(dependency, repository.url());
-                    var urlConnection = openConnection(metaDataUrl);
-                    var status = urlConnection.getResponseCode();
+                found = dependency.snapshot()
+                        ? downloadSnapshotDependency(dependency, repository)
+                        : downloadDependency(dependency, repository);
 
-                    if ((status >= 200 && status < 300) || status == 304) {
-                        var stream = openStream(metaDataUrl);
-                        var latest = SnapshotHelper.readLastVersion(stream);
-
-                        dependency.newArtifactName(dependency.artifactId() + "-" + latest);
-                        libman.log(String.format("Dependency %s is snapshot! Update version to %s", dependency.artifactId(), latest));
-
-                        var artifactUrl = LibmanUtils.artifactUrl(dependency, repository.url());
-
-                        if (!LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).exists()) {
-                            libman.log(String.format("Trying download %s from %s", dependency.artifactName(), repository.name()));
-                            downloadFile(artifactUrl, LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
-                        }
-
-                        found = Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
-
-                        if (checkFileHashes) {
-                            libman.log("Checking file hash from repository...");
-
-                            var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
-                            var hashStream = openStream(hashUrl);
-                            var remoteFileHash = LibmanUtils.stringFromStream(hashStream);
-                            var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
-
-                            libman.log(String.format("Remote hash for %s from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));
-                            libman.log(String.format("Local hash for %s from %s - %s", dependency.artifactName(), repository.name(), localFileHash));
-
-                            var validHash = localFileHash.equalsIgnoreCase(remoteFileHash);
-
-                            if (validHash) {
-                                libman.log(String.format("Dependency file %s hashes matches with each other!", dependency.artifactName()));
-                            } else {
-                                throw new RuntimeException("Artifact hash mismatch for file: " + LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).getName());
-                            }
-                        }
-                    }
-                } else {
-                    var artifactUrl = LibmanUtils.artifactUrl(dependency, repository.url());
-                    var urlConnection = openConnection(artifactUrl);
-                    var status = urlConnection.getResponseCode();
-
-                    if ((status >= 200 && status < 300) || status == 304) {
-                        if (!LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).exists()) {
-                            libman.log(String.format("Trying download %s from %s", dependency.artifactName(), repository.name()));
-                            downloadFile(artifactUrl, LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
-                        }
-
-                        found = Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
-
-                        if (checkFileHashes) {
-                            libman.log("Checking file hash from repository...");
-
-                            var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
-                            var hashStream = openStream(hashUrl);
-                            var remoteFileHash = LibmanUtils.stringFromStream(hashStream);
-                            var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
-
-                            libman.log(String.format("Remote hash for %s from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));
-                            libman.log(String.format("Local hash for %s from %s - %s", dependency.artifactName(), repository.name(), localFileHash));
-
-                            var validHash = localFileHash.equalsIgnoreCase(remoteFileHash);
-
-                            if (validHash) {
-                                libman.log(String.format("Dependency file %s hashes matches with each other!", dependency.artifactName()));
-                            } else {
-                                throw new RuntimeException("Artifact hash mismatch for file: " + LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).getName());
-                            }
-                        }
-                    }
-                }
+                if (checkFileHashes) checkHashes(dependency, repository);
             } catch (Exception exception) {
                 // ignoring............. :p
             }
@@ -138,8 +65,77 @@ public class LibraryDownloader implements Downloader {
         libman.downloaded().put(dependency, LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
     }
 
+    @Override
+    public boolean downloadSnapshotDependency(Dependency dependency, @NotNull Repository repository) throws Exception {
+        var metaDataUrl = LibmanUtils.metadataUrl(dependency, repository.url());
+        var urlConnection = openConnection(metaDataUrl);
+        var status = urlConnection.getResponseCode();
+
+        if ((status >= 200 && status < 300) || status == 304) {
+            var stream = openStream(metaDataUrl);
+            var latest = SnapshotHelper.readLastVersion(stream);
+
+            dependency.newArtifactName(dependency.artifactId() + "-" + latest);
+            libman.log(String.format("Dependency %s is snapshot! Update version to %s", dependency.artifactId(), latest));
+
+            var artifactUrl = LibmanUtils.artifactUrl(dependency, repository.url());
+
+            if (!LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).exists()) {
+                libman.log(String.format("Trying download `%s.jar` from `%s`...", dependency.artifactName(), repository.name()));
+                downloadFile(artifactUrl, LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
+            }
+
+            return Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean downloadDependency(Dependency dependency, @NotNull Repository repository) throws Exception {
+        var artifactUrl = LibmanUtils.artifactUrl(dependency, repository.url());
+        var urlConnection = openConnection(artifactUrl);
+        var status = urlConnection.getResponseCode();
+
+        if ((status >= 200 && status < 300) || status == 304) {
+            if (!LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).exists()) {
+                libman.log(String.format("Trying download `%s.jar` from `%s`...", dependency.artifactName(), repository.name()));
+                downloadFile(artifactUrl, LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
+            }
+
+            return Files.exists(LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
+        }
+
+        return false;
+    }
+
+    private void checkHashes(Dependency dependency, @NotNull Repository repository) throws Exception {
+        libman.log("Checking file hash from repository...");
+
+        var hashUrl = LibmanUtils.sha1Url(dependency, repository.url());
+        var hashStream = openStream(hashUrl);
+        var remoteFileHash = LibmanUtils.stringFromStream(hashStream);
+        var localFileHash = LibmanUtils.fileHash(LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()));
+
+        libman.log(String.format("Remote hash for `%s.jar` from %s - %s", dependency.artifactName(), repository.name(), remoteFileHash));
+        libman.log(String.format("Local hash for `%s.jar` from %s - %s", dependency.artifactName(), repository.name(), localFileHash));
+
+        var validHash = localFileHash.equalsIgnoreCase(remoteFileHash);
+
+        if (validHash) {
+            libman.log(String.format("Dependency file %s hashes matches with each other!", dependency.artifactName()));
+        } else {
+            throw new RuntimeException("Artifact hash mismatch for file: " + LibmanUtils.libraryFile(dependency, libman.downloadedDependsFolder()).getName());
+        }
+    }
+
     private void downloadFile(URL url, @NotNull File output) throws Exception {
         var stream = openStream(url);
+
+        if (Files.notExists(output.toPath())) {
+            Files.createDirectories(output.toPath());
+        }
+
         Files.copy(stream, output.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
