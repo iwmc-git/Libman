@@ -37,7 +37,7 @@ public class LibmanUtils {
     }
 
     public static @NotNull Path libraryPath(@NotNull Dependency dependency) {
-        return Paths.get(dependency.artifactName() + ".jar");
+        return Paths.get(dependency.groupId(), dependency.artifactId(), dependency.artifactName() + ".jar");
     }
 
     public static @NotNull Path libraryPath(@NotNull Dependency dependency, @NotNull Path root) {

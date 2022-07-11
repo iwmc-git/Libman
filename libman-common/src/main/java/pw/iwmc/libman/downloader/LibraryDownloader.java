@@ -131,7 +131,28 @@ public class LibraryDownloader implements Downloader {
             }
         }
 
-        if (!found) {
+        if (found) {
+            try {
+                var groupIdDir = libman.downloadedDependsFolder().resolve(dependency.groupId());
+                if (Files.notExists(groupIdDir)) {
+                    Files.createDirectory(groupIdDir);
+                }
+
+                var artifactIdDir = groupIdDir.resolve(dependency.artifactId());
+                if (Files.notExists(artifactIdDir)) {
+                    Files.createDirectory(artifactIdDir);
+                }
+
+                var path = LibmanUtils.libraryPath(dependency, artifactIdDir);
+                var dependencyPath = artifactIdDir.resolve(path);
+
+                if (Files.notExists(dependencyPath)) {
+                    Files.move(path, dependencyPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (Exception exception) {
+                throw new RuntimeException(exception);
+            }
+        } else {
             throw new RuntimeException("Could not download artifact `" + dependency.artifactId() + "` from any of the repositories");
         }
 
