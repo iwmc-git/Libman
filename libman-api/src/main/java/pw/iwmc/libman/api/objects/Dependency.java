@@ -59,4 +59,16 @@ public interface Dependency {
     static @NotNull Dependency of(String groupId, String artifactId, String version) {
         return new DependencyImpl(groupId, artifactId, version);
     }
+
+    /**
+     * Creates new ${@link Dependency} object from gradle format.
+     *
+     * @param format gradle dependency format.
+     *
+     * @return the dependency object.
+     */
+    static @NotNull Dependency of(@NotNull String format) {
+        var split = format.split(":");
+        return new DependencyImpl(split[0], split[1], split[2]);
+    }
 }
