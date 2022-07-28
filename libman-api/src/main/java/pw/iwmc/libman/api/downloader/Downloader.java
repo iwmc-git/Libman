@@ -18,6 +18,14 @@ public interface Downloader {
     /**
      * Downloads dependency.
      *
+     * @param repository the repository.
+     * @param dependency the dependency.
+     */
+    void downloadDependencyFromRepo(@NotNull Dependency dependency, Repository repository);
+
+    /**
+     * Downloads dependency.
+     *
      * @param dependency the dependency.
      * @param repository the repository.
      *

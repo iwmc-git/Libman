@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 public class LibraryDownloader implements Downloader {
     private final Libman libman = Libman.libman();
@@ -35,6 +36,10 @@ public class LibraryDownloader implements Downloader {
 
     @Override
     public void downloadDependency(@NotNull Dependency dependency) {
+        download(dependency, libman.repositories());
+    }
+
+    private void download(@NotNull Dependency dependency, List<Repository> repositories) {
         var libraryPath = LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder());
         var found = false;
 
@@ -44,7 +49,7 @@ public class LibraryDownloader implements Downloader {
             return;
         }
 
-        for (var repository : libman.repositories()) {
+        for (var repository : repositories) {
             try {
                 if (found) continue;
 
@@ -63,6 +68,14 @@ public class LibraryDownloader implements Downloader {
         }
 
         libman.downloaded().put(dependency, LibmanUtils.libraryPath(dependency, libman.downloadedDependsFolder()));
+    }
+
+    @Override
+    public void downloadDependencyFromRepo(@NotNull Dependency dependency, Repository repository) {
+        var repositories = libman.repositories();
+        repositories.add(repository);
+
+        download(dependency, repositories);
     }
 
     @Override
